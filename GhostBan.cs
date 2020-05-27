@@ -1,5 +1,4 @@
-﻿using ConVar;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
 using Oxide.Core;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +6,8 @@ using System.Linq;
 namespace Oxide.Plugins
 {
 
-    [Info("GhostBan", "Bobakanoosh", "1.0.0")]
+    [Info("GhostBan", "Bobakanoosh", "1.0.1")]
+    [Description("Ghost ban rule breakers causing them to not do damage to other players")]
     class GhostBan : RustPlugin
     {
         private const string DATA_FILE = "GhostBanData";
@@ -300,6 +300,7 @@ namespace Oxide.Plugins
                 blockSameAuthLevel = true,
                 enableTeamDamage = true,
                 enableRandomDrop = false,
+                percentDropChance = 0.50f,
                 dropInterval = 60f
             };
 
