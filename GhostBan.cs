@@ -1,12 +1,13 @@
 ﻿using Newtonsoft.Json;
 using Oxide.Core;
+using Oxide.Core.Libraries.Covalence;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace Oxide.Plugins
 {
 
-    [Info("GhostBan", "Bobakanoosh", "1.0.1")]
+    [Info("GhostBan", "Bobakanoosh", "1.0.2")]
     [Description("Ghost ban rule breakers causing them to not do damage to other players")]
     class GhostBan : RustPlugin
     {
@@ -33,9 +34,14 @@ namespace Oxide.Plugins
 
         private void OnServerInitialized()
         {
-            foreach(BasePlayer player in BasePlayer.activePlayerList)
+            foreach(Ban ban in ghostBanStoredData.bans)
             {
-                OnPlayerConnected(player);
+                BasePlayer player = BasePlayer.FindByID(ban.playerId);
+                if(player.IsValid())
+                {
+                    OnPlayerConnected(player);
+                }  
+
             }
 
             if(config.enableRandomDrop)
@@ -66,7 +72,7 @@ namespace Oxide.Plugins
         object OnEntityTakeDamage(BasePlayer victim, HitInfo info)
         {
             BasePlayer attacker = info.InitiatorPlayer;
-            if(attacker.IsValid() && playerToBan.ContainsKey(attacker) && victim.IsValid() && !victim.IsNpc)
+            if(playerToBan.ContainsKey(attacker))
             {
                 if(config.enableTeamDamage && victim.currentTeam == attacker.currentTeam)
                 {
@@ -117,7 +123,7 @@ namespace Oxide.Plugins
 
         }
 
-        [ChatCommand("ghost.unban")]
+        [Command("ghost.unban")]
         private void GhostUnbanCommand(BasePlayer player, string command, string[] args)
         {
             string message;
@@ -137,7 +143,7 @@ namespace Oxide.Plugins
             Message(player, "RemovedGhostBan", target.displayName);
         }
 
-        [ChatCommand("ghost.check")]
+        [Command("ghost.check")]
         private void GhostCheckCommand(BasePlayer player, string command, string[] args)
         {
             string message;
@@ -169,16 +175,17 @@ namespace Oxide.Plugins
             {
                 BasePlayer player = pair.Key;
 
-                if (player.IsValid())
+                if (player.IsValid() && !player.IsSleeping())
                 {
                     int rand = UnityEngine.Random.Range(0, 1000);
                     if(rand < (int)(config.percentDropChance * 1000))
                     {
                         Item[] items = player.inventory.AllItems();
-                        int itemIndex = UnityEngine.Random.Range(0, items.Length);
-
-                        items[itemIndex].Drop(player.transform.position, player.estimatedVelocity);
-
+                        if(items.Length != 0)
+                        {
+                            int itemIndex = UnityEngine.Random.Range(0, items.Length);
+                            items[itemIndex].Drop(player.transform.position, player.estimatedVelocity);
+                        }
                     }
                 }
             }
@@ -191,7 +198,10 @@ namespace Oxide.Plugins
             playerToBan[target] = ban;
             ghostBanStoredData.bans.Add(ban);
 
-            Subscribe(nameof(OnEntityTakeDamage));
+            if(ghostBanStoredData.bans.Count == 1)
+            {
+                Subscribe(nameof(OnEntityTakeDamage));
+            }
 
             SaveData();
         }
