@@ -7,7 +7,7 @@ using System.Linq;
 namespace Oxide.Plugins
 {
 
-    [Info("GhostBan", "Bobakanoosh", "1.0.2")]
+    [Info("GhostBan", "Bobakanoosh", "1.0.4")]
     [Description("Ghost ban rule breakers causing them to not do damage to other players")]
     class GhostBan : RustPlugin
     {
@@ -24,6 +24,10 @@ namespace Oxide.Plugins
 
         private void Init()
         {
+            AddCovalenceCommand("ghost.ban", nameof(GhostBanCommand));
+            AddCovalenceCommand("ghost.unban", nameof(GhostUnbanCommand));
+            AddCovalenceCommand("ghost.check", nameof(GhostCheckCommand));
+
             LoadConfig();
             LoadData();
 
@@ -37,11 +41,10 @@ namespace Oxide.Plugins
             foreach(Ban ban in ghostBanStoredData.bans)
             {
                 BasePlayer player = BasePlayer.FindByID(ban.playerId);
-                if(player.IsValid())
+                if(player.IsConnected)
                 {
-                    OnPlayerConnected(player);
+                    playerToBan[player] = ban;
                 }  
-
             }
 
             if(config.enableRandomDrop)
@@ -89,9 +92,10 @@ namespace Oxide.Plugins
 
         #region Commands
 
-        [ChatCommand("ghost.ban")]
-        private void GhostBanCommand(BasePlayer player, string command, string[] args)
+        private void GhostBanCommand(IPlayer p, string command, string[] args)
         {
+            BasePlayer player = p.Object as BasePlayer;
+
             string message;
             BasePlayer target = CommandPreCheck(player, command, args, PERMISSION_BAN, out message);
             if (target == null)
@@ -123,9 +127,10 @@ namespace Oxide.Plugins
 
         }
 
-        [Command("ghost.unban")]
-        private void GhostUnbanCommand(BasePlayer player, string command, string[] args)
+        private void GhostUnbanCommand(IPlayer p, string command, string[] args)
         {
+            BasePlayer player = p.Object as BasePlayer;
+
             string message;
             BasePlayer target = CommandPreCheck(player, command, args, PERMISSION_UNBAN, out message);
             if (target == null)
@@ -143,9 +148,10 @@ namespace Oxide.Plugins
             Message(player, "RemovedGhostBan", target.displayName);
         }
 
-        [Command("ghost.check")]
-        private void GhostCheckCommand(BasePlayer player, string command, string[] args)
+        private void GhostCheckCommand(IPlayer p, string command, string[] args)
         {
+            BasePlayer player = p.Object as BasePlayer;
+
             string message;
             BasePlayer target = CommandPreCheck(player, command, args, PERMISSION_CHECK, out message);
             if(target == null)
